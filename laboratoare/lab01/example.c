@@ -1,16 +1,25 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+ 
 
-#define NUM_THREADS 100
+#define NUM_THREADS 2
 
 void *f(void *arg) {
   long id = *(long *)arg;
-  printf("Hello World din thread-ul %ld!\n", id);
+  printf("Hello World in thread-ul %ld!\n", id);
+  pthread_exit(NULL);
+}
+
+void *f2(void *arg) {
+  long id = *(long *)arg;
+  printf("Hello Friend in thread-ul %ld!\n", id);
   pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
+  long cores = sysconf(_SC_NPROCESSORS_CONF);
   pthread_t threads[NUM_THREADS];
   int r;
   long id;
@@ -19,6 +28,9 @@ int main(int argc, char *argv[]) {
 
   for (id = 0; id < NUM_THREADS; id++) {
     ids[id] = id;
+    if (id % 2 == 0)
+      r = pthread_create(&threads[id], NULL, f2, &ids[id]);
+    else
     r = pthread_create(&threads[id], NULL, f, &ids[id]);
 
     if (r) {

@@ -1,14 +1,40 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
-/*
-    schelet pentru exercitiul 5
-*/
+
+
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
 
 int *arr;
 int array_size;
 int num_threads;
+
+void *thread_function(void *arg) {
+  long ID = *(long *)arg;
+  int start = ID * (double) array_size / num_threads;
+  int end = min((ID + 1) * (double) array_size / num_threads, array_size);
+
+  struct timespec st, fi; 
+  double elapsed; 
+  clock_gettime(CLOCK_MONOTONIC, &st); 
+
+  for(int i = start; i < end; i++) {
+    arr[i] += 100;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &fi);
+
+  elapsed = (fi.tv_sec - st.tv_sec);
+  elapsed += (fi.tv_nsec - st.tv_nsec) / 1000000000.0;
+
+  printf("Thread %ld took %.6f seconds\n", ID, elapsed);
+
+  pthread_exit(NULL);
+
+}
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
@@ -33,10 +59,15 @@ int main(int argc, char *argv[]) {
       printf("\n");
     }
   }
+  pthread_t threads[num_threads];
+  long ids[num_threads];
+  for (long i = 0; i < num_threads; i++) {
+    ids[i] = i;
+    pthread_create(&threads[i], NULL, thread_function, &ids[i]);
+  }
 
-  // TODO: aceasta operatie va fi paralelizata cu num_threads fire de executie
-  for (int i = 0; i < array_size; i++) {
-    arr[i] += 100;
+  for (int i = 0; i < num_threads; i++) {
+    pthread_join(threads[i], NULL);
   }
 
   for (int i = 0; i < array_size; i++) {
